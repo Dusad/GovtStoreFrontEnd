@@ -1,19 +1,17 @@
-import React from 'react'
 import { useState } from "react";
-import { TextField, Button, Container, Typography } from "@mui/material";
+import { TextField, Button, Container, Typography, Box } from "@mui/material";
 
-function Register() {
+function RegisterCreate() {
   const [rname, setRname] = useState("");
   const [rdisc, setRdisc] = useState("");
   const [message, setMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const registerData = { rname, rdisc };
 
     try {
-      const response = await fetch("http://localhost:8080/api/registers", {
+      const response = await fetch("http://localhost:8080/createregister", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registerData),
@@ -33,12 +31,13 @@ function Register() {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 4 }}>
+    <Container maxWidth="sm" sx={{ mt: 4, p: 3, border: "1px solid #ddd", borderRadius: "8px", boxShadow: 2 }}>
       <Typography variant="h5" gutterBottom>
         Create a Register
       </Typography>
       {message && <Typography color="primary">{message}</Typography>}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      
+      <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <TextField
           label="Register Name"
           fullWidth
@@ -46,6 +45,7 @@ function Register() {
           value={rname}
           onChange={(e) => setRname(e.target.value)}
           required
+          sx={{ p: 1, m: 1 }}
         />
         <TextField
           label="Description"
@@ -54,13 +54,14 @@ function Register() {
           value={rdisc}
           onChange={(e) => setRdisc(e.target.value)}
           required
+          sx={{ p: 1, m: 1 }}
         />
-        <Button type="submit" variant="contained" color="primary">
+        <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
           Create Register
         </Button>
-      </form>
+      </Box>
     </Container>
   );
 }
 
-export default Register;
+export default RegisterCreate;

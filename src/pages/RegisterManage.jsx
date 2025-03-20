@@ -112,7 +112,8 @@ function RegisterManage() {
                                             <TableHead>
                                               <TableRow sx={{ bgcolor: "#f0f0f0" }}>
                                                 <TableCell>Quantity</TableCell>
-                                                <TableCell>Current Quantity</TableCell>
+                                                <TableCell>Issued Quantity</TableCell>
+                                                <TableCell>Remaning Quantity</TableCell>
                                                 <TableCell>Purchase Date</TableCell>
                                                 <TableCell>Rate per Unit</TableCell>
                                               </TableRow>
@@ -122,6 +123,7 @@ function RegisterManage() {
                                                 <TableRow key={detail.id}>
                                                   <TableCell>{detail.itemquantity}</TableCell>
                                                   <TableCell>{detail.issuedquantity}</TableCell>
+                                                  <TableCell>{(detail.itemquantity || 0) - (detail.issuedquantity || 0)}</TableCell>
                                                   <TableCell>{new Date(detail.itempurchasedate).toLocaleDateString()}</TableCell>
                                                   <TableCell>₹{detail.rateperunit}</TableCell>
                                                 </TableRow>

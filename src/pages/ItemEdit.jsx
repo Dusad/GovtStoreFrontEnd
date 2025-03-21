@@ -10,10 +10,11 @@ import {
   FormControl,
   InputLabel,
   Box,
+  CircularProgress,
 } from "@mui/material";
 
 function ItemEdit() {
-  const { id } = useParams(); // URL से ID प्राप्त करें
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [item, setItem] = useState({
@@ -24,68 +25,77 @@ function ItemEdit() {
 
   const [registers, setRegisters] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  // 🔹 1. API Call: Existing Item Details Fetch करें
+  // 🟢 Fetch Item & Registers
   useEffect(() => {
-    fetch(`http://localhost:8080/item/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
+    const controller = new AbortController();
+  
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const itemRes = await fetch(`http://localhost:8080/item/${id}`, { signal: controller.signal });
+        const regRes = await fetch("http://localhost:8080/allregister", { signal: controller.signal });
+  
+        if (!itemRes.ok || !regRes.ok) throw new Error("Failed to fetch data");
+  
+        const itemData = await itemRes.json();  // अब API सिर्फ ID भेजेगा
+        const registersData = await regRes.json();
+  
+        setRegisters(registersData);
         setItem({
-          itemname: data.itemname || "",
-          pageno: data.pageno || "",
-          registerId: data.register?.id || "",
+          itemname: itemData.itemname || "",
+          pageno: itemData.pageno || "",
+          registerId: itemData.registerId || "", // 🔹 अब सही से registerId आ जाएगा
         });
+      } catch (err) {
+        if (err.name !== "AbortError") setError("Error fetching data.");
+      } finally {
         setLoading(false);
-      })
-      .catch(() => {
-        setMessage("Error fetching item data.");
-        setLoading(false);
-      });
-
-    // 🔹 2. API Call: सभी Registers को लाएं
-    fetch("http://localhost:8080/allregister")
-      .then((res) => res.json())
-      .then((data) => setRegisters(data))
-      .catch(() => setMessage("Error fetching registers."));
+      }
+    };
+  
+    fetchData();
+  
+    return () => controller.abort();
   }, [id]);
 
-  // 🔹 3. Input Change Handler
+  // 🔹 Handle Input Change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setItem({ ...item, [name]: value });
+    setItem((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 🔹 4. Form Submit (PUT API)
-  const handleSubmit = (e) => {
+  // 🔹 Handle Form Submit
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("");
+    setError("");
 
-    fetch(`http://localhost:8080/item/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(item),
-    })
-      .then((res) => {
-        if (res.ok) {
-          setMessage("Item updated successfully!");
-          setTimeout(() => navigate("/items"), 2000);
-        } else {
-          setMessage("Failed to update item.");
-        }
-      })
-      .catch(() => setMessage("Server error!"));
+    try {
+      const res = await fetch(`http://localhost:8080/item/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      });
+
+      if (!res.ok) throw new Error("Failed to update item");
+
+      navigate("/items");
+    } catch (err) {
+      setError("Update failed! Try again.",err);
+    }
   };
 
-  if (loading) return <Typography>Loading...</Typography>;
+  // 🔵 Loading UI
+  if (loading) return <Container sx={{ textAlign: "center", mt: 5 }}><CircularProgress /></Container>;
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4, p: 3, boxShadow: 3, borderRadius: 2 }}>
-      <Typography variant="h4" sx={{ textAlign: "center", fontWeight: "bold", color: "primary.main" }}>
+      <Typography variant="h4" align="center" sx={{ fontWeight: "bold", color: "primary.main" }}>
         Edit Item
       </Typography>
 
-      {message && <Typography color="error" sx={{ textAlign: "center", mb: 2 }}>{message}</Typography>}
+      {error && <Typography color="error" align="center" sx={{ mb: 2 }}>{error}</Typography>}
 
       <form onSubmit={handleSubmit}>
         <TextField
@@ -107,14 +117,11 @@ function ItemEdit() {
           sx={{ mb: 2 }}
         />
 
-        {/* Register Dropdown */}
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel>Select Register</InputLabel>
           <Select name="registerId" value={item.registerId} onChange={handleChange} required>
             {registers.map((reg) => (
-              <MenuItem key={reg.id} value={reg.id}>
-                {reg.rname}
-              </MenuItem>
+              <MenuItem key={reg.id} value={reg.id}>{reg.rname}</MenuItem>
             ))}
           </Select>
         </FormControl>

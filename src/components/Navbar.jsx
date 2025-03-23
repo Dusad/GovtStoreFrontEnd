@@ -13,6 +13,7 @@ function Navbar() {
   };
 
   const handleMenuOpen = (event) => {
+    event.stopPropagation();  // इवेंट बबलिंग रोकने के लिए
     setAnchorEl(event.currentTarget);
   };
 
@@ -33,10 +34,6 @@ function Navbar() {
           <ListItemText primary="Items" />
           <ArrowDropDownIcon />
         </ListItem>
-        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-          <MenuItem component={Link} to="/items/manage" onClick={handleMenuClose}>Item Manage</MenuItem>
-          <MenuItem component={Link} to="/itemdetails" onClick={handleMenuClose}>Item Details</MenuItem>
-        </Menu>
       </List>
     </Box>
   );
@@ -65,10 +62,6 @@ function Navbar() {
             <Button color="inherit" onClick={handleMenuOpen}>
               Items <ArrowDropDownIcon />
             </Button>
-            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-              <MenuItem component={Link} to="/items/manage" onClick={handleMenuClose}>Item Manage</MenuItem>
-              <MenuItem component={Link} to="/itemdetails" onClick={handleMenuClose}>Item Details</MenuItem>
-            </Menu>
           </Box>
         </Toolbar>
       </AppBar>
@@ -76,6 +69,13 @@ function Navbar() {
       <Drawer anchor="left" open={mobileOpen} onClose={handleDrawerToggle}>
         {drawer}
       </Drawer>
+
+      {/* Menu को Drawer के बाहर रखना सही रहेगा */}
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+        <MenuItem component={Link} to="/items/manage" onClick={handleMenuClose}>Item Manage</MenuItem>
+        <MenuItem component={Link} to="/itemdetails" onClick={handleMenuClose}>Item Details</MenuItem>
+        <MenuItem component={Link} to="/issueitems" onClick={handleMenuClose}>Issue Item</MenuItem>
+      </Menu>
     </>
   );
 }

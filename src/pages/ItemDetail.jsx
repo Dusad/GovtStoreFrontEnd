@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import {
+  Card,
+  CardContent,
+  Typography,
   Table,
   TableBody,
   TableCell,
@@ -8,137 +10,360 @@ import {
   TableHead,
   TableRow,
   Paper,
-  IconButton,
-  Menu,
   MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Collapse,
+  CircularProgress,
+  TextField,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  IconButton,
+  InputAdornment,
+  Grid,
 } from "@mui/material";
-import { MoreVert, Edit, Delete, Visibility } from "@mui/icons-material";
+import {
+  Search as SearchIcon,
+  ExpandMore as ExpandMoreIcon,
+  FilterList as FilterIcon,
+  Refresh as RefreshIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon,
+} from "@mui/icons-material";
 
-function ItemDetail() {
+const ItemDetails = () => {
+  const [registers, setRegisters] = useState([]);
+  const [selectedRegister, setSelectedRegister] = useState("");
   const [items, setItems] = useState([]);
-  const [anchorEl, setAnchorEl] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [expandedItemId, setExpandedItemId] = useState(null);
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [loadingItemDetails, setLoadingItemDetails] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
+  // ✅ API से सभी Registers लोड करें
   useEffect(() => {
-    axios
-      .get("http://localhost:8080/allitemdetail")
-      .then((response) => setItems(response.data))
-      .catch((error) => console.error("Error fetching data:", error));
+    fetch("http://localhost:8080/allregister")
+      .then((res) => res.json())
+      .then((data) => setRegisters(data))
+      .catch((err) => console.error("Error loading registers:", err));
   }, []);
 
-  const handleMenuClick = (event, item) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedItem(item);
+  // ✅ चुने गए Register के Items लोड करें
+  useEffect(() => {
+    if (selectedRegister) {
+      setLoadingItems(true);
+      fetch(`http://localhost:8080/reg/item/${selectedRegister}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setItems(data);
+          setLoadingItems(false);
+        })
+        .catch((err) => {
+          console.error("Error loading items:", err);
+          setLoadingItems(false);
+        });
+    } else {
+      setItems([]);
+    }
+  }, [selectedRegister]);
+
+  // ✅ चुने गए Item की डिटेल्स लोड करें
+  const toggleItemDetails = (itemId) => {
+    if (expandedItemId === itemId) {
+      setExpandedItemId(null);
+      setSelectedItem(null);
+    } else {
+      setExpandedItemId(itemId);
+      setLoadingItemDetails(true);
+
+      fetch(`http://localhost:8080/itemdetailbyitemid/${itemId}`)
+        .then((res) => res.text())
+        .then((text) => {
+          try {
+            const data = JSON.parse(text);
+            setSelectedItem(data);
+          } catch (error) {
+            console.error("Invalid JSON Response:", error + text);
+            setSelectedItem(null);
+          }
+          setLoadingItemDetails(false);
+        })
+        .catch((err) => {
+          console.error("Error loading item details:", err);
+          setLoadingItemDetails(false);
+        });
+    }
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  // ✅ Search Functionality
+  const filteredItems = items.filter((item) =>
+    item.itemname.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const handleView = () => {
-    setViewDialogOpen(true);
-    handleClose();
-  };
+  // ✅ Sorting Functionality
+  const sortedItems = React.useMemo(() => {
+    let sortableItems = [...filteredItems];
+    if (sortConfig.key) {
+      sortableItems.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredItems, sortConfig]);
 
-  const handleEdit = () => {
-    setEditDialogOpen(true);
-    handleClose();
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Item Details</h1>
-      <TableContainer component={Paper} className="shadow-lg">
-        <Table>
-          <TableHead sx={{ backgroundColor: "#f3f4f6" }}>
-            <TableRow>
-              <TableCell className="font-bold">ID</TableCell>
-              <TableCell className="font-bold">Quantity</TableCell>
-              <TableCell className="font-bold">Issued</TableCell>
-              <TableCell className="font-bold">Purchase Date</TableCell>
-              <TableCell className="font-bold">Rate Per Unit</TableCell>
-              <TableCell className="font-bold">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id} className="hover:bg-gray-50">
-                <TableCell>{item.id}</TableCell>
-                <TableCell>{item.itemquantity}</TableCell>
-                <TableCell>{item.issuedquantity}</TableCell>
-                <TableCell>
-                  {new Date(item.itempurchasedate).toLocaleDateString()}
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* 🔹 ComboBox और Search Box एक लाइन में */}
+      <Grid container spacing={2} alignItems="center" className="mb-6">
+        <Grid item xs={12} sm={6} md={4}>
+          <FormControl fullWidth>
+            <InputLabel>Select Register</InputLabel>
+            <Select
+              value={selectedRegister}
+              onChange={(e) => setSelectedRegister(e.target.value)}
+              startAdornment={
+                <InputAdornment position="start">
+                  <FilterIcon className="text-gray-500" />
+                </InputAdornment>
+              }
+            >
+              {registers.length > 0 ? (
+                registers.map((reg) => (
+                  <MenuItem key={reg.id} value={reg.id}>
+                    {reg.rname}
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem disabled>No Registers Found</MenuItem>
+              )}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search Items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon className="text-gray-500" />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
+        <Grid item xs={12} sm={12} md={4} className="text-right">
+          <IconButton
+            color="primary"
+            onClick={() => {
+              setSelectedRegister("");
+              setSearchQuery("");
+              setItems([]);
+            }}
+          >
+            <RefreshIcon />
+          </IconButton>
+        </Grid>
+      </Grid>
+
+      {/* 🔹 Table for Items */}
+      {selectedRegister && (
+        <TableContainer component={Paper} className="shadow-xl rounded-lg">
+          <Table>
+            <TableHead>
+              <TableRow className="bg-gradient-to-r from-blue-600 to-purple-700 shadow-md">
+                <TableCell
+                  className="text-white font-bold uppercase cursor-pointer hover:bg-blue-700 transition-all"
+                  onClick={() => requestSort("id")}
+                >
+                  <div className="flex items-center">
+                    Item ID
+                    {sortConfig.key === "id" && (
+                      <span className="ml-2">
+                        {sortConfig.direction === "asc" ? (
+                          <ArrowUpwardIcon fontSize="small" />
+                        ) : (
+                          <ArrowDownwardIcon fontSize="small" />
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
-                <TableCell>{item.rateperunit}</TableCell>
-                <TableCell>
-                  <IconButton onClick={(e) => handleMenuClick(e, item)}>
-                    <MoreVert />
-                  </IconButton>
-                  <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl) && selectedItem?.id === item.id}
-                    onClose={handleClose}
-                  >
-                    <MenuItem onClick={handleView}>
-                      <Visibility className="mr-2" /> View
-                    </MenuItem>
-                    <MenuItem onClick={handleEdit}>
-                      <Edit className="mr-2" /> Edit
-                    </MenuItem>
-                    <MenuItem onClick={handleClose}>
-                      <Delete className="mr-2" /> Delete
-                    </MenuItem>
-                  </Menu>
+                <TableCell
+                  className="text-white font-bold uppercase cursor-pointer hover:bg-blue-700 transition-all"
+                  onClick={() => requestSort("itemname")}
+                >
+                  <div className="flex items-center">
+                    Item Name
+                    {sortConfig.key === "itemname" && (
+                      <span className="ml-2">
+                        {sortConfig.direction === "asc" ? (
+                          <ArrowUpwardIcon fontSize="small" />
+                        ) : (
+                          <ArrowDownwardIcon fontSize="small" />
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell
+                  className="text-white font-bold uppercase cursor-pointer hover:bg-blue-700 transition-all"
+                  onClick={() => requestSort("pageno")}
+                >
+                  <div className="flex items-center">
+                    Register PageNo.
+                    {sortConfig.key === "pageno" && (
+                      <span className="ml-2">
+                        {sortConfig.direction === "asc" ? (
+                          <ArrowUpwardIcon fontSize="small" />
+                        ) : (
+                          <ArrowDownwardIcon fontSize="small" />
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-white font-bold uppercase text-center">
+                  Actions
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {loadingItems ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-4">
+                    <CircularProgress className="text-blue-600" />
+                  </TableCell>
+                </TableRow>
+              ) : sortedItems.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-4 text-red-500">
+                    No Items Found!
+                  </TableCell>
+                </TableRow>
+              ) : (
+                sortedItems.map((item) => (
+                  <React.Fragment key={item.id}>
+                    <TableRow
+                      className="cursor-pointer hover:bg-gray-100 transition-all"
+                      onClick={() => toggleItemDetails(item.id)}
+                    >
+                      <TableCell>{item.id}</TableCell>
+                      <TableCell>{item.itemname}</TableCell>
+                      <TableCell>{item.pageno}</TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="contained"
+                          className={`${
+                            expandedItemId === item.id
+                              ? "bg-red-600 hover:bg-red-700"
+                              : "bg-blue-600 hover:bg-blue-700"
+                          }`}
+                          endIcon={<ExpandMoreIcon />}
+                        >
+                          {expandedItemId === item.id ? "Hide Details" : "View Details"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
 
-      <Button variant="contained" color="primary" className="mt-4">
-        Add Item
-      </Button>
+                    {/* 🔹 Expandable Details Section */}
+                    <TableRow>
+                      <TableCell colSpan={4} className="p-0">
+                        <Collapse in={expandedItemId === item.id} timeout="auto" unmountOnExit>
+                          <div className="p-4 bg-blue-50 rounded-md shadow-inner">
+                            {loadingItemDetails ? (
+                              <Typography className="text-blue-600 text-center">
+                                <CircularProgress size={24} className="mr-2" />
+                                Loading Item Details...
+                              </Typography>
+                            ) : selectedItem ? (
+                              <>
+                                <Typography variant="h6" className="mb-2 text-blue-800 font-semibold">
+                                  Item Details
+                                </Typography>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <Typography>
+                                    <span className="font-semibold">Quantity:</span> {selectedItem.itemquantity}
+                                  </Typography>
+                                  <Typography>
+                                    <span className="font-semibold">Issued:</span> {selectedItem.issuedquantity}
+                                  </Typography>
+                                  <Typography>
+                                    <span className="font-semibold">Purchase Date:</span>{" "}
+                                    {new Date(selectedItem.itempurchasedate).toLocaleString()}
+                                  </Typography>
+                                  <Typography>
+                                    <span className="font-semibold">Rate per Unit:</span> ₹{selectedItem.rateperunit}
+                                  </Typography>
+                                </div>
 
-      {/* View Dialog */}
-      <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)}>
-        <DialogTitle>Item Details</DialogTitle>
-        <DialogContent>
-          {selectedItem && (
-            <div>
-              <p><strong>ID:</strong> {selectedItem.id}</p>
-              <p><strong>Quantity:</strong> {selectedItem.itemquantity}</p>
-              <p><strong>Issued:</strong> {selectedItem.issuedquantity}</p>
-              <p><strong>Purchase Date:</strong> {new Date(selectedItem.itempurchasedate).toLocaleDateString()}</p>
-              <p><strong>Rate Per Unit:</strong> {selectedItem.rateperunit}</p>
-            </div>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setViewDialogOpen(false)} color="primary">Close</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
-        <DialogTitle>Edit Item</DialogTitle>
-        <DialogContent>
-          <p>यहाँ Edit Form आएगा</p>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)} color="primary">Cancel</Button>
-          <Button onClick={() => alert("Save Function")} color="secondary">Save</Button>
-        </DialogActions>
-      </Dialog>
+                                {/* 🔹 Issued Details Table */}
+                                {selectedItem.itemissue?.length > 0 ? (
+                                  <TableContainer component={Paper} className="mt-2 shadow-lg">
+                                    <Table>
+                                      <TableHead className="bg-blue-800">
+                                        <TableRow>
+                                          <TableCell className="text-white">ID</TableCell>
+                                          <TableCell className="text-white">Issued To</TableCell>
+                                          <TableCell className="text-white">Return From</TableCell>
+                                          <TableCell className="text-white">Issue Quantity</TableCell>
+                                          <TableCell className="text-white">Issue Date</TableCell>
+                                          <TableCell className="text-white">Return Date</TableCell>
+                                        </TableRow>
+                                      </TableHead>
+                                      <TableBody>
+                                        {selectedItem.itemissue.map((issue) => (
+                                          <TableRow key={issue.id}>
+                                            <TableCell>{issue.id}</TableCell>
+                                            <TableCell>{issue.issuedto || "-"}</TableCell>
+                                            <TableCell>{issue.returnfrom || "-"}</TableCell>
+                                            <TableCell>{issue.issuequan}</TableCell>
+                                            <TableCell>{issue.issuedate ? new Date(issue.issuedate).toLocaleString() : "-"}</TableCell>
+                                            <TableCell>{issue.returndate ? new Date(issue.returndate).toLocaleString() : "-"}</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </TableContainer>
+                                ) : (
+                                  <Typography className="text-red-500 text-center mt-4">
+                                    No Issued Details Available!
+                                  </Typography>
+                                )}
+                              </>
+                            ) : null}
+                          </div>
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
+                  </React.Fragment>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </div>
   );
-}
+};
 
-export default ItemDetail;
+export default ItemDetails;

@@ -8,6 +8,7 @@ import ItemCreate from "./pages/ItemCreate";
 import ItemEdit from "./pages/ItemEdit";
 import Home from "./pages/Home";
 import ItemDetail from "./pages/ItemDetail";
+import ItemIssue from "./pages/ItemIssue";
 
 import { Container } from "@mui/material";
 
@@ -25,6 +26,7 @@ function App() {
           <Route path="/items/create" element={<ItemCreate />} />
           <Route path="/items/edit/:id" element={<ItemEdit />} />
           <Route path="/itemdetails" element={<ItemDetail />} />
+          <Route path="/issueitems" element={<ItemIssue />} />
         </Routes>
       </Container>
     </Router>

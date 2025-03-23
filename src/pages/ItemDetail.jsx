@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Table,
   TableBody,
@@ -7,114 +8,136 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Typography,
-  Box,
   IconButton,
-  Collapse,
+  Menu,
+  MenuItem,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
-import { ExpandMore, ExpandLess } from "@mui/icons-material";
+import { MoreVert, Edit, Delete, Visibility } from "@mui/icons-material";
 
-function ItemDetail({ itemId }) {
-  const [itemDetails, setItemDetails] = useState([]);
-  const [expanded, setExpanded] = useState(false);
+function ItemDetail() {
+  const [items, setItems] = useState([]);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:8080/itemdetail/${itemId}`)
-      .then((res) => res.json())
-      .then((data) => setItemDetails(data))
-      .catch((err) => console.error("Error fetching item details:", err));
-  }, [itemId]);
+    axios
+      .get("http://localhost:8080/allitemdetail")
+      .then((response) => setItems(response.data))
+      .catch((error) => console.error("Error fetching data:", error));
+  }, []);
+
+  const handleMenuClick = (event, item) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedItem(item);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleView = () => {
+    setViewDialogOpen(true);
+    handleClose();
+  };
+
+  const handleEdit = () => {
+    setEditDialogOpen(true);
+    handleClose();
+  };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" sx={{ textAlign: "center", mb: 2, fontWeight: "bold", color: "primary.main" }}>
-        Item Details
-      </Typography>
-
-      <TableContainer component={Paper} sx={{ boxShadow: 3, borderRadius: 2 }}>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Item Details</h1>
+      <TableContainer component={Paper} className="shadow-lg">
         <Table>
-          <TableHead>
-            <TableRow sx={{ bgcolor: "#1976d2" }}>
-              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Quantity</TableCell>
-              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Issued</TableCell>
-              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Purchase Date</TableCell>
-              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Rate per Unit</TableCell>
-              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Item Issues</TableCell>
-              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Expand</TableCell>
+          <TableHead sx={{ backgroundColor: "#f3f4f6" }}>
+            <TableRow>
+              <TableCell className="font-bold">ID</TableCell>
+              <TableCell className="font-bold">Quantity</TableCell>
+              <TableCell className="font-bold">Issued</TableCell>
+              <TableCell className="font-bold">Purchase Date</TableCell>
+              <TableCell className="font-bold">Rate Per Unit</TableCell>
+              <TableCell className="font-bold">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {itemDetails.length > 0 ? (
-              itemDetails.map((detail) => (
-                <React.Fragment key={detail.id}>
-                  <TableRow>
-                    <TableCell>{detail.itemquantity}</TableCell>
-                    <TableCell>{detail.issuedquantity}</TableCell>
-                    <TableCell>{new Date(detail.itempurchasedate).toLocaleDateString()}</TableCell>
-                    <TableCell>{detail.rateperunit}</TableCell>
-                    <TableCell>{detail.itemissue?.length || 0}</TableCell>
-                    <TableCell>
-                      <IconButton onClick={() => setExpanded(!expanded)}>
-                        {expanded ? <ExpandLess /> : <ExpandMore />}
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-
-                  {/* Expandable Row for Item Issues */}
-                  <TableRow>
-                    <TableCell colSpan={6} sx={{ p: 0 }}>
-                      <Collapse in={expanded} timeout="auto" unmountOnExit>
-                        <Box sx={{ p: 2, bgcolor: "#f0f0f0", borderRadius: 2 }}>
-                          <Typography variant="h6">Item Issues:</Typography>
-                          {detail.itemissue?.length > 0 ? (
-                            <TableContainer component={Paper} sx={{ mt: 1 }}>
-                              <Table size="small">
-                                <TableHead>
-                                  <TableRow sx={{ bgcolor: "#e0e0e0" }}>
-                                    <TableCell>Issued To</TableCell>
-                                    <TableCell>Return From</TableCell>
-                                    <TableCell>Issued Quantity</TableCell>
-                                    <TableCell>Issued Date</TableCell>
-                                    <TableCell>Return Date</TableCell>
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {detail.itemissue.map((issue) => (
-                                    <TableRow key={issue.id}>
-                                      <TableCell>{issue.issuedto || "-"}</TableCell>
-                                      <TableCell>{issue.returnfrom || "-"}</TableCell>
-                                      <TableCell>{issue.issuequan}</TableCell>
-                                      <TableCell>
-                                        {issue.issuedate ? new Date(issue.issuedate).toLocaleDateString() : "-"}
-                                      </TableCell>
-                                      <TableCell>
-                                        {issue.returndate ? new Date(issue.returndate).toLocaleDateString() : "-"}
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
-                          ) : (
-                            <Typography>No Issues</Typography>
-                          )}
-                        </Box>
-                      </Collapse>
-                    </TableCell>
-                  </TableRow>
-                </React.Fragment>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} sx={{ textAlign: "center" }}>
-                  No item details available
+            {items.map((item) => (
+              <TableRow key={item.id} className="hover:bg-gray-50">
+                <TableCell>{item.id}</TableCell>
+                <TableCell>{item.itemquantity}</TableCell>
+                <TableCell>{item.issuedquantity}</TableCell>
+                <TableCell>
+                  {new Date(item.itempurchasedate).toLocaleDateString()}
+                </TableCell>
+                <TableCell>{item.rateperunit}</TableCell>
+                <TableCell>
+                  <IconButton onClick={(e) => handleMenuClick(e, item)}>
+                    <MoreVert />
+                  </IconButton>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl) && selectedItem?.id === item.id}
+                    onClose={handleClose}
+                  >
+                    <MenuItem onClick={handleView}>
+                      <Visibility className="mr-2" /> View
+                    </MenuItem>
+                    <MenuItem onClick={handleEdit}>
+                      <Edit className="mr-2" /> Edit
+                    </MenuItem>
+                    <MenuItem onClick={handleClose}>
+                      <Delete className="mr-2" /> Delete
+                    </MenuItem>
+                  </Menu>
                 </TableCell>
               </TableRow>
-            )}
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
-    </Box>
+
+      <Button variant="contained" color="primary" className="mt-4">
+        Add Item
+      </Button>
+
+      {/* View Dialog */}
+      <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)}>
+        <DialogTitle>Item Details</DialogTitle>
+        <DialogContent>
+          {selectedItem && (
+            <div>
+              <p><strong>ID:</strong> {selectedItem.id}</p>
+              <p><strong>Quantity:</strong> {selectedItem.itemquantity}</p>
+              <p><strong>Issued:</strong> {selectedItem.issuedquantity}</p>
+              <p><strong>Purchase Date:</strong> {new Date(selectedItem.itempurchasedate).toLocaleDateString()}</p>
+              <p><strong>Rate Per Unit:</strong> {selectedItem.rateperunit}</p>
+            </div>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewDialogOpen(false)} color="primary">Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
+        <DialogTitle>Edit Item</DialogTitle>
+        <DialogContent>
+          <p>यहाँ Edit Form आएगा</p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)} color="primary">Cancel</Button>
+          <Button onClick={() => alert("Save Function")} color="secondary">Save</Button>
+        </DialogActions>
+      </Dialog>
+    </div>
   );
 }
 

@@ -17,13 +17,13 @@ import {
 } from "@mui/material";
 import { Delete, Edit, ExpandMore, ExpandLess } from "@mui/icons-material";
 
-const API_URL = "http://localhost:8080"; // ✅ API URL को Config में रखना
+const API_URL = "http://localhost:8080";
 
 function ItemManage() {
   const [items, setItems] = useState([]);
   const [expandedItems, setExpandedItems] = useState({});
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true); // ✅ Loading State
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${API_URL}/allitems`)
@@ -32,6 +32,7 @@ function ItemManage() {
         return res.json();
       })
       .then((data) => {
+        console.log("API Response:", data); // Debugging
         setItems(data);
         setLoading(false);
       })
@@ -76,7 +77,7 @@ function ItemManage() {
         + Create Item
       </Button>
 
-      {loading ? ( // ✅ लोडिंग दिखाने के लिए
+      {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
           <CircularProgress />
         </Box>
@@ -88,6 +89,7 @@ function ItemManage() {
                 <TableCell sx={{ color: "white", fontWeight: "bold", minWidth: 50 }}>ID</TableCell>
                 <TableCell sx={{ color: "white", fontWeight: "bold", minWidth: 150 }}>Name</TableCell>
                 <TableCell sx={{ color: "white", fontWeight: "bold", minWidth: 100 }}>Page No</TableCell>
+                <TableCell sx={{ color: "white", fontWeight: "bold", minWidth: 150 }}>Register Name</TableCell>
                 <TableCell sx={{ color: "white", fontWeight: "bold", minWidth: 100 }}>Actions</TableCell>
                 <TableCell sx={{ color: "white", fontWeight: "bold", minWidth: 100 }}>Details</TableCell>
               </TableRow>
@@ -99,6 +101,7 @@ function ItemManage() {
                     <TableCell>{item.id}</TableCell>
                     <TableCell>{item.itemname}</TableCell>
                     <TableCell>{item.pageno}</TableCell>
+                    <TableCell>{item.registername}</TableCell>
                     <TableCell>
                       <IconButton color="primary" component={Link} to={`/items/edit/${item.id}`}>
                         <Edit />
@@ -116,11 +119,11 @@ function ItemManage() {
 
                   {/* Expandable Row for Item Details */}
                   <TableRow>
-                    <TableCell colSpan={5} sx={{ p: 0 }}>
+                    <TableCell colSpan={6} sx={{ p: 0 }}>
                       <Collapse in={expandedItems[item.id]} timeout="auto" unmountOnExit>
                         <Box sx={{ p: 2, bgcolor: "#f0f0f0", borderRadius: 2 }}>
                           <Typography variant="h6">Item Details:</Typography>
-                          {item.itemdetail && item.itemdetail.length > 0 ? (
+                          {item.itemdetail?.length > 0 ? (
                             <TableContainer component={Paper} sx={{ mt: 1 }}>
                               <Table>
                                 <TableHead>
@@ -140,7 +143,7 @@ function ItemManage() {
                                       <TableCell>{new Intl.DateTimeFormat("en-GB").format(new Date(detail.itempurchasedate))}</TableCell>
                                       <TableCell>{detail.rateperunit}</TableCell>
                                       <TableCell>
-                                        {detail.itemissue && detail.itemissue.length > 0 ? (
+                                        {detail.itemissue?.length > 0 ? (
                                           <TableContainer component={Paper} sx={{ mt: 1 }}>
                                             <Table size="small">
                                               <TableHead>

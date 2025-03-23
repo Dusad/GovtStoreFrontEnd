@@ -7,7 +7,7 @@ import ItemManage from "./pages/ItemManage";
 import ItemCreate from "./pages/ItemCreate";
 import ItemEdit from "./pages/ItemEdit";
 import Home from "./pages/Home";
-//import ItemDetails from "./pages/ItemDetail";
+import ItemDetail from "./pages/ItemDetail";
 
 import { Container } from "@mui/material";
 
@@ -24,7 +24,7 @@ function App() {
           <Route path="/items/manage" element={<ItemManage />} />
           <Route path="/items/create" element={<ItemCreate />} />
           <Route path="/items/edit/:id" element={<ItemEdit />} />
-          {/* <Route path="/itemdetails" element={<ItemDetails />} /> ✅ नया Route */}
+          <Route path="/itemdetails" element={<ItemDetail />} />
         </Routes>
       </Container>
     </Router>

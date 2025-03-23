@@ -1,14 +1,23 @@
-import React from "react";
-import { AppBar, Toolbar, Typography, Button, Box, IconButton, Drawer, List, ListItem, ListItemText } from "@mui/material";
+import React, { useState } from "react";
+import { AppBar, Toolbar, Typography, Button, Box, IconButton, Drawer, List, ListItem, ListItemText, Menu, MenuItem } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { Link } from "react-router-dom";
-import { useState } from "react";
 
 function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
   };
 
   const drawer = (
@@ -20,12 +29,14 @@ function Navbar() {
         <ListItem button component={Link} to="/register/manage">
           <ListItemText primary="Registers" />
         </ListItem>
-        <ListItem button component={Link} to="/items/manage">
+        <ListItem button onClick={handleMenuOpen}>
           <ListItemText primary="Items" />
+          <ArrowDropDownIcon />
         </ListItem>
-        {/* <ListItem button component={Link} to="/itemdetails">
-          <ListItemText primary="Item Details" />
-        </ListItem> */}
+        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+          <MenuItem component={Link} to="/items/manage" onClick={handleMenuClose}>Item Manage</MenuItem>
+          <MenuItem component={Link} to="/itemdetails" onClick={handleMenuClose}>Item Details</MenuItem>
+        </Menu>
       </List>
     </Box>
   );
@@ -34,7 +45,6 @@ function Navbar() {
     <>
       <AppBar position="static">
         <Toolbar>
-          {/* ✅ Mobile Menu Button */}
           <IconButton
             edge="start"
             color="inherit"
@@ -49,17 +59,20 @@ function Navbar() {
             Store Management
           </Typography>
 
-          {/* ✅ Desktop Navigation */}
           <Box sx={{ display: { xs: "none", md: "block" } }}>
             <Button color="inherit" component={Link} to="/">Home</Button>
             <Button color="inherit" component={Link} to="/register/manage">Registers</Button>
-            <Button color="inherit" component={Link} to="/items/manage">Items</Button>
-            {/* <Button color="inherit" component={Link} to="/itemdetails">Item Details</Button> */}
+            <Button color="inherit" onClick={handleMenuOpen}>
+              Items <ArrowDropDownIcon />
+            </Button>
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+              <MenuItem component={Link} to="/items/manage" onClick={handleMenuClose}>Item Manage</MenuItem>
+              <MenuItem component={Link} to="/itemdetails" onClick={handleMenuClose}>Item Details</MenuItem>
+            </Menu>
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* ✅ Mobile Drawer */}
       <Drawer anchor="left" open={mobileOpen} onClose={handleDrawerToggle}>
         {drawer}
       </Drawer>
